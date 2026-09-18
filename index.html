@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#060914">
+<title>NEON CIRCUIT — Light Cycle Arena</title>
+<style>
+:root{
+  --bg:#060914;--panel:#0b1424;--cyan:#53f8ff;
+  --pink:#ff4ba7;--text:#e8f5ff;--muted:#839ab1;
+  --line:rgba(113,206,255,.19)
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text)}
+button,select,input{font:inherit}
+button{cursor:pointer;touch-action:manipulation}
+button:focus-visible,select:focus-visible{outline:2px solid white;outline-offset:4px}
+button{
+  border:1px solid var(--line);border-radius:10px;
+  background:#102033;color:var(--text);padding:11px 16px;
+  transition:background .15s,transform .15s
+}
+button:hover{background:#17324a}
+button:active{transform:translateY(1px)}
+button.primary{
+  background:var(--cyan);color:#04151f;font-weight:900;
+  border-color:var(--cyan);box-shadow:0 0 26px #53f8ff24
+}
+button.primary:hover{background:#a5fcff}
+button.small{padding:8px 11px;font-size:12px}
+canvas{display:block;position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+#hud{
+  position:fixed;top:max(12px,env(safe-area-inset-top));left:18px;right:18px;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  pointer-events:none;z-index:2
+}
+.brand{font-weight:950;letter-spacing:3px;font-size:16px;white-space:nowrap}
+.brand span{color:var(--cyan)}
+.brand small{display:block;font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:5px}
+.metrics{display:flex;gap:20px}
+.metric label{display:block;font-size:9px;letter-spacing:2px;color:var(--muted)}
+.metric b{font-size:20px;font-variant-numeric:tabular-nums}
+.tools{display:flex;gap:6px;pointer-events:auto}
+#bottom{
+  position:fixed;bottom:max(14px,env(safe-area-inset-bottom));
+  left:22px;right:22px;display:flex;align-items:center;justify-content:space-between;
+  gap:18px;z-index:2;pointer-events:none
+}
+.resources{display:flex;gap:18px}
+.resource{width:150px}
+.resource label{display:flex;justify-content:space-between;font-size:10px;letter-spacing:1px;margin-bottom:6px}
+.track{height:5px;background:#17263a;border-radius:5px;overflow:hidden}
+.fill{height:100%;width:100%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+#phaseBar{background:var(--pink)}
+#keys{font-size:11px;color:var(--muted);text-align:right;line-height:1.8}
+kbd{border:1px solid #294259;border-radius:4px;padding:2px 5px;color:#cfeeff;font:10px monospace}
+#overlay{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  z-index:5;padding:22px;background:rgba(2,6,15,.66);
+  backdrop-filter:blur(9px);overflow:auto
+}
+#overlay.hidden{display:none}
+.panel{
+  width:min(660px,100%);max-height:100%;overflow:auto;
+  border:1px solid #264154;border-radius:20px;padding:34px;
+  background:linear-gradient(145deg,rgba(15,30,49,.97),rgba(6,12,25,.98));
+  box-shadow:0 30px 100px #0009,0 0 80px #24dfff09
+}
+.eyebrow{font:11px monospace;letter-spacing:4px;color:var(--cyan);margin-bottom:14px}
+h1{font-size:clamp(38px,8vw,65px);letter-spacing:-3px;line-height:.94;margin:0 0 18px;font-weight:1000}
+h1 span{color:var(--cyan);text-shadow:0 0 40px #53f8ff35}
+h2{font-size:34px;letter-spacing:-1px;margin:0 0 12px}
+p{color:#9ab1c7;font-size:14px;line-height:1.7;margin:12px 0}
+.intro{max-width:510px}
+.tags{display:flex;gap:7px;flex-wrap:wrap;margin:20px 0}
+.tag{font-size:10px;letter-spacing:1px;padding:6px 9px;border:1px solid var(--line);border-radius:5px;color:#a3dcf0}
+.settings{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:24px 0}
+.field label{display:block;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:8px}
+select{width:100%;background:#071321;color:white;padding:11px;border:1px solid #284258;border-radius:8px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.actions button{flex:1;min-width:130px}
+.help{border-top:1px solid var(--line);padding-top:16px;margin-top:22px;font-size:12px;line-height:1.9;color:#8da7bc}
+.help strong{color:#dbf5ff}
+.record{margin-top:18px;color:#75a8be;font:11px monospace;letter-spacing:1px}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px 0}
+.result-grid div{background:#06111e;border:1px solid var(--line);padding:15px;border-radius:10px}
+.result-grid b{font-size:25px;display:block}
+.result-grid span{font-size:10px;color:var(--muted)}
+#announcement{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;z-index:3;text-align:center
+}
+#announcement b{font-size:90px;letter-spacing:-5px;color:white;text-shadow:0 0 40px #53f8ff88}
+#announcement small{display:block;font-size:12px;letter-spacing:5px;color:var(--cyan)}
+#toast{
+  position:fixed;top:90px;left:50%;transform:translateX(-50%);
+  font:11px monospace;letter-spacing:2px;text-align:center;
+  color:#dbfcff;background:#071621dc;border:1px solid #295367;
+  padding:10px 17px;border-radius:30px;z-index:3;pointer-events:none;
+  opacity:0;transition:opacity .2s;white-space:nowrap
+}
+#touch{
+  position:fixed;bottom:max(15px,env(safe-area-inset-bottom));left:16px;right:16px;
+  display:none;justify-content:space-between;align-items:center;z-index:4;
+  user-select:none;-webkit-user-select:none
+}
+.pad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,40px);gap:4px}
+.pad button{padding:0;font-size:20px;background:#0c2438d9;border-color:#38627d}
+.pad .up{grid-column:2}.pad .left{grid-column:1;grid-row:2}
+.pad .right{grid-column:3;grid-row:2}.pad .down{grid-column:2;grid-row:3}
+.touch-actions{display:flex;gap:10px}
+.touch-actions button{width:66px;height:66px;border-radius:50%;padding:0;font-size:10px;font-weight:bold;letter-spacing:1px;background:#102b3ce8;border-color:#53f8ff70}
+.touch-actions button:last-child{border-color:#ff4ba780;color:#ff96c9}
+#touch button{touch-action:none}
+@media(pointer:coarse){
+  #touch{display:flex}
+  #bottom{bottom:156px;left:18px;right:18px}
+  #keys{display:none}
+  .resource{width:130px}
+}
+@media(max-width:680px){
+  #hud{left:12px;right:12px;gap:7px}
+  .brand{font-size:11px;letter-spacing:1px}.brand small{font-size:7px;letter-spacing:1px}
+  .metrics{gap:12px}.metric b{font-size:15px}.metric label{font-size:7px;letter-spacing:1px}
+  .tools button{padding:7px 8px}
+  #fullButton{display:none}
+  .panel{padding:24px}
+  .settings{gap:10px}
+  #keys{display:none}
+  .result-grid div{padding:10px}
+  .result-grid b{font-size:20px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Игровая арена NEON CIRCUIT"></canvas>
+
+<header id="hud">
+  <div class="brand">NEON<span>CIRCUIT</span><small>LIGHT CYCLE / COMBAT SYSTEM</small></div>
+  <div class="metrics">
+    <div class="metric"><label id="roundLabel">СЕКТОР</label><b id="roundValue">01 / 05</b></div>
+    <div class="metric"><label>ОЧКИ</label><b id="scoreValue">0</b></div>
+    <div class="metric"><label>В ЖИВЫХ</label><b id="aliveValue">—</b></div>
+  </div>
+  <div class="tools">
+    <button class="small" id="soundButton" title="Звук" aria-label="Переключить звук">♪ ON</button>
+    <button class="small" id="fullButton" title="Полный экран" aria-label="Полный экран">⛶</button>
+    <button class="small" id="pauseButton" title="Пауза" aria-label="Пауза">Ⅱ</button>
+  </div>
+</header>
+
+<div id="bottom">
+  <div class="resources">
+    <div class="resource">
+      <label><span>НИТРО</span><span id="energyText">100%</span></label>
+      <div class="track"><div class="fill" id="energyBar"></div></div>
+    </div>
+    <div class="resource">
+      <label><span>ФАЗА / <span id="shieldText">ЩИТ 0</span></span><span id="phaseText">ГОТОВА</span></label>
+      <div class="track"><div class="fill" id="phaseBar"></div></div>
+    </div>
+  </div>
+  <div id="keys">
+    <kbd>WASD</kbd> / <kbd>↑↓←→</kbd> движение · <kbd>SHIFT</kbd> нитро · <kbd>SPACE</kbd> фаза<br>
+    <kbd>P</kbd> пауза · <kbd>M</kbd> звук · <kbd>R</kbd> заново
+  </div>
+</div>
+
+<div id="touch">
+  <div class="pad">
+    <button class="up" data-dir="3" aria-label="Вверх">↑</button>
+    <button class="left" data-dir="2" aria-label="Влево">←</button>
+    <button class="right" data-dir="0" aria-label="Вправо">→</button>
+    <button class="down" data-dir="1" aria-label="Вниз">↓</button>
+  </div>
+  <div class="touch-actions">
+    <button id="boostTouch">НИТРО</button>
+    <button id="phaseTouch">ФАЗА</button>
+  </div>
+</div>
+
+<div id="announcement"></div>
+<div id="toast" role="status"></div>
+<div id="overlay"></div>
+
+<script>
+"use strict";
+
+(() => {
+  const $ = id => document.getElementById(id);
+  const canvas = $("game");
+  const ctx = canvas.getContext("2d", {alpha:false});
+  const overlay = $("overlay");
+  const COLS = 96, ROWS = 60, CELL = 10;
+  const AW = COLS * CELL, AH = ROWS * CELL;
+  const DX = [1,0,-1,0], DY = [0,1,0,-1];
+  const COLORS = ["#53f8ff","#ff4ba7","#ffc857","#a88aff","#74ffac","#ff855b"];
+  const DIFFICULTY = {
+    easy:   {speed:8.1, bot:7.2, look:11, noise:4.3, name:"НОВИЧОК"},
+    normal: {speed:9.4, bot:9.0, look:18, noise:1.6, name:"ПИЛОТ"},
+    hard:   {speed:10.7,bot:10.9,look:27, noise:.65,name:"ЛЕГЕНДА"}
+  };
+  const SECTORS = ["ПОРТ 09","СИНАПС","РАЗЛОМ","ЧЁРНЫЙ КОНТУР","ЯДРО"];
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const coarse = matchMedia("(pointer: coarse)");
+
+  let W=0,H=0,dpr=1,scale=1,ox=0,oy=0;
+  let state="menu", mode="campaign", difficulty="normal";
+  let stage=1, score=0, wins=[0,0], roundNo=1;
+  let actors=[], board=new Int16Array(COLS*ROWS), pickups=[], particles=[];
+  let elapsed=0, totalTime=0, totalKills=0, pickupTimer=0, settle=0;
+  let countdown=0, lastCount=-1, shake=0, flash=0, toastTime=0;
+  let touchBoost=false, boostLocked=false;
+  let last=performance.now(), accumulator=0, uiClock=0, ambient=0;
+  let best=0, muted=false, audio=null, master=null;
+  let roundWin=false, roundWinner=-1;
+  const keys=new Set();
+
+  try {
+    best=Number(localStorage.getItem("neon-circuit-best-v1"))||0;
+    muted=localStorage.getItem("neon-circuit-muted-v1")==="1";
+  } catch(e) {}
+
+  const trailCanvas=document.createElement("canvas");
+  trailCanvas.width=AW;trailCanvas.height=AH;
+  const tc=trailCanvas.getContext("2d");
+  const floorCanvas=document.createElement("canvas");
+  floorCanvas.width=AW;floorCanvas.height=AH;
+  const fc=floorCanvas.getContext("2d");
+
+  function index(x,y){return y*COLS+x}
+  function inside(x,y){return x>=0&&y>=0&&x<COLS&&y<ROWS}
+  function value(x,y){return inside(x,y)?board[index(x,y)]:-1}
+  function rnd(a,b){return a+Math.random()*(b-a)}
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+  function fmtTime(t){return `${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,"0")}`}
+
+  function resize(){
+    W=innerWidth;H=innerHeight;dpr=Math.min(devicePixelRatio||1,2);
+    canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
+    const top=W<680?86:95;
+    const bottom=coarse.matches?205:83;
+    scale=Math.max(.1,Math.min((W-28)/AW,(H-top-bottom)/AH));
+    ox=(W-AW*scale)/2;
+    oy=top+Math.max(0,(H-top-bottom-AH*scale)/2);
+  }
+  addEventListener("resize",resize);
+  resize();
+
+  function unlockAudio(){
+    if(!audio){
+      try{
+        const AC=window.AudioContext||window.webkitAudioContext;
+        if(!AC)return;
+        audio=new AC();
+        master=audio.createGain();
+        master.gain.value=muted?0:.18;
+        master.connect(audio.destination);
+      }catch(e){return}
+    }
+    if(audio.state==="suspended")audio.resume().catch(()=>{});
+  }
+  function tone(freq,duration=.1,type="sine",volume=.3,slide=0){
+    if(!audio||muted||audio.state!=="running")return;
+    const osc=audio.createOscillator(), gain=audio.createGain();
+    osc.type=type;osc.frequency.setValueAtTime(freq,audio.currentTime);
+    if(slide)osc.frequency.exponentialRampToValueAtTime(Math.max(20,slide),audio.currentTime+duration);
+    gain.gain.setValueAtTime(.001,audio.currentTime);
+    gain.gain.exponentialRampToValueAtTime(Math.max(.002,volume),audio.currentTime+.008);
+    gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);
+    osc.connect(gain);gain.connect(master);
+    osc.start();osc.stop(audio.currentTime+duration+.02);
+  }
+  function sound(name){
+    if(name==="turn")tone(240,.035,"triangle",.11,390);
+    if(name==="pickup"){tone(620,.12,"sine",.3,1050);setTimeout(()=>tone(1240,.17,"sine",.2),75)}
+    if(name==="crash"){tone(130,.45,"sawtooth",.48,24);tone(68,.65,"triangle",.4,22)}
+    if(name==="phase")tone(170,.35,"sine",.35,1500);
+    if(name==="shield")tone(1300,.2,"triangle",.3,220);
+    if(name==="win"){[440,554,659,880].forEach((f,i)=>setTimeout(()=>tone(f,.3,"triangle",.25),i*95))}
+  }
+  function toggleSound(){
+    unlockAudio();muted=!muted;
+    if(master)master.gain.setTargetAtTime(muted?0:.18,audio.currentTime,.03);
+    try{localStorage.setItem("neon-circuit-muted-v1",muted?"1":"0")}catch(e){}
+    $("soundButton").textContent=muted?"♪ OFF":"♪ ON";
+  }
+  $("soundButton").textContent=muted?"♪ OFF":"♪ ON";
+
+  function toast(text){
+    $("toast").textContent=text;$("toast").style.opacity="1";toastTime=2.5;
+  }
+  function showPanel(html){overlay.innerHTML=`<section class="panel">${html}</section>`;overlay.classList.remove("hidden")}
+  function hidePanel(){overlay.classList.add("hidden")}
+  function clearInput(){keys.clear();touchBoost=false;boostLocked=false}
+  function saveBest(){
+    if(score>best){
+      best=score;
+      try{localStorage.setItem("neon-circuit-best-v1",String(best))}catch(e){}
+    }
+  }
+
+  function menu(){
+    state="menu";clearInput();$("announcement").innerHTML="";
+    showPanel(`
+      <div class="eyebrow">UNDERGROUND RACING PROTOCOL / V.01</div>
+      <h1>NEON<br><span>CIRCUIT</span></h1>
+      <p class="intro">Город забыл твоё имя. Арена запомнит твой след.
+      Перекрывай соперникам путь, прорывайся через ловушки и останься последним пилотом.</p>
+      <div class="tags"><span class="tag">5 СЕКТОРОВ</span><span class="tag">AI-СОПЕРНИКИ</span>
+      <span class="tag">ЛОКАЛЬНАЯ ДУЭЛЬ</span><span class="tag">БЕЗ БИБЛИОТЕК</span></div>
+      <div class="settings">
+        <div class="field"><label for="modeSelect">РЕЖИМ</label>
+          <select id="modeSelect">
+            <option value="campaign" ${mode==="campaign"?"selected":""}>Кампания</option>
+            <option value="duel" ${mode==="duel"?"selected":""}>Дуэль · 2 игрока</option>
+          </select>
+        </div>
+        <div class="field"><label for="difficultySelect">СКОРОСТЬ / СЛОЖНОСТЬ</label>
+          <select id="difficultySelect">
+            <option value="easy" ${difficulty==="easy"?"selected":""}>Новичок</option>
+            <option value="normal" ${difficulty==="normal"?"selected":""}>Пилот</option>
+            <option value="hard" ${difficulty==="hard"?"selected":""}>Легенда</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions"><button class="primary" data-action="start">ЗАПУСТИТЬ ДВИГАТЕЛЬ →</button></div>
+      <div class="help">
+        <strong>Управление:</strong> WASD / стрелки · Shift — нитро · Space — фаза.<br>
+        <strong>Дуэль на одной клавиатуре:</strong> P1 — WASD, Shift, Space.
+        P2 — стрелки, Enter — нитро, / — фаза. До 3 побед.<br>
+        <strong>Правила:</strong> не врезайся в стены и световые следы.
+        Фаза пропускает сквозь следы, но не сквозь стены.
+        Щит спасает от одного столкновения со следом.<br>
+        <strong>Бонусы:</strong> S — щит · N — нитро · Φ — сброс перезарядки фазы.
+        На телефоне доступны кнопки и свайпы.
+      </div>
+      <div class="record">ЛОКАЛЬНЫЙ РЕКОРД / ${best.toLocaleString("ru-RU")}</div>
+    `);
+  }
+
+  function newGame(fromMenu=false){
+    if(fromMenu){
+      mode=$("modeSelect").value;
+      difficulty=$("difficultySelect").value;
+    }
+    unlockAudio();stage=1;score=0;wins=[0,0];roundNo=1;
+    totalTime=0;totalKills=0;
+    buildRound();
+  }
+
+  function addWall(x,y,w,h){
+    for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++){
+      if(inside(xx,yy))board[index(xx,yy)]=-1;
+    }
+  }
+
+  function buildFloor(){
+    fc.fillStyle="#07111e";fc.fillRect(0,0,AW,AH);
+    const g=fc.createRadialGradient(AW/2,AH/2,30,AW/2,AH/2,650);
+    g.addColorStop(0,"#102439");g.addColorStop(1,"#050c17");
+    fc.fillStyle=g;fc.fillRect(0,0,AW,AH);
+    fc.lineWidth=.5;
+    for(let x=0;x<=AW;x+=CELL){
+      fc.strokeStyle=x%100===0?"#244058":"#13283a";
+      fc.beginPath();fc.moveTo(x,0);fc.lineTo(x,AH);fc.stroke();
+    }
+    for(let y=0;y<=AH;y+=CELL){
+      fc.strokeStyle=y%100===0?"#244058":"#13283a";
+      fc.beginPath();fc.moveTo(0,y);fc.lineTo(AW,y);fc.stroke();
+    }
+    for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+      if(board[index(x,y)]!==-1)continue;
+      fc.fillStyle="#1e2942";fc.fillRect(x*CELL,y*CELL,CELL,CELL);
+      fc.fillStyle="#526180";fc.fillRect(x*CELL,y*CELL,CELL,1);
+      fc.fillStyle="#101828";fc.fillRect(x*CELL,y*CELL+CELL-2,CELL,2);
+    }
+    fc.strokeStyle="#467790";fc.lineWidth=2;fc.strokeRect(1,1,AW-2,AH-2);
+    fc.fillStyle="#527186";fc.font="9px monospace";
+    fc.fillText("NC // RESTRICTED GRID",14,20);
+    fc.textAlign="right";fc.fillText("BOUNDARY: LETHAL",AW-14,AH-13);fc.textAlign="left";
+  }
+
+  function makeActor(id,x,y,dir,bot=false){
+    const a={
+      id,x,y,prevX:x,prevY:y,dir,queue:[],bot,alive:true,
+      color:COLORS[id-1],energy:100,shield:0,phase:0,phaseCD:0,
+      progress:0,boost:false,trailCount:0,aiTimer:0,boostRest:0
+    };
+    board[index(x,y)]=id;actors.push(a);stamp(a,x,y,false);return a;
+  }
+
+  function buildRound(){
+    clearInput();board.fill(0);actors=[];pickups=[];particles=[];
+    elapsed=0;pickupTimer=2;settle=0;shake=0;flash=0;
+    tc.clearRect(0,0,AW,AH);
+    const layout=mode==="duel"?((roundNo-1)%3)+1:stage;
+    if(layout===2){
+      addWall(32,15,2,12);addWall(62,33,2,12);
+    }else if(layout===3){
+      addWall(27,18,12,2);addWall(57,40,12,2);
+      addWall(47,26,2,8);
+    }else if(layout===4){
+      addWall(26,14,2,12);addWall(68,34,2,12);
+      addWall(39,29,18,2);
+    }else if(layout>=5){
+      addWall(25,17,12,2);addWall(59,17,12,2);
+      addWall(25,41,12,2);addWall(59,41,12,2);
+      addWall(47,25,2,10);
+    }
+    makeActor(1,12,30,0);
+    if(mode==="duel"){
+      makeActor(2,83,30,2);
+    }else{
+      const spawns=[[83,12,2],[83,47,2],[48,8,1],[48,51,3],[12,12,0]];
+      const count=Math.min(5,stage+1);
+      for(let i=0;i<count;i++)makeActor(i+2,...spawns[i],true);
+    }
+    buildFloor();
+    for(let i=0;i<3;i++)spawnPickup();
+    hidePanel();state="countdown";countdown=3.1;lastCount=-1;
+    accumulator=0;updateHUD();
+    toast(mode==="duel"?`ДУЭЛЬ ${roundNo} · ${wins[0]} : ${wins[1]}`:`СЕКТОР ${stage} / ${SECTORS[stage-1]}`);
+  }
+
+  function stamp(a,x,y,connect=true){
+    const cx=x*CELL+CELL/2,cy=y*CELL+CELL/2;
+    tc.save();tc.strokeStyle=a.color;tc.fillStyle=a.color;
+    tc.lineWidth=5.6;tc.lineCap="square";tc.globalAlpha=.77;
+    if(connect){
+      tc.beginPath();tc.moveTo(a.prevX*CELL+CELL/2,a.prevY*CELL+CELL/2);
+      tc.lineTo(cx,cy);tc.stroke();
+    }else tc.fillRect(cx-2.8,cy-2.8,5.6,5.6);
+    tc.globalAlpha=.72;tc.strokeStyle="#ecffff";tc.lineWidth=1.2;
+    if(connect){
+      tc.beginPath();tc.moveTo(a.prevX*CELL+CELL/2,a.prevY*CELL+CELL/2);
+      tc.lineTo(cx,cy);tc.stroke();
+    }else tc.fillRect(cx-1,cy-1,2,2);
+    tc.restore();
+  }
+
+  function queueDirection(a,d){
+    if(!a||!a.alive||!["playing","countdown"].includes(state))return;
+    const previous=a.queue.length?a.queue[a.queue.length-1]:a.dir;
+    if(d===previous||d===(previous+2)%4||a.queue.length>=2)return;
+    a.queue.push(d);
+  }
+
+  function activatePhase(a){
+    if(state!=="playing"||!a?.alive||a.phaseCD>0)return;
+    a.phase=.88;a.phaseCD=7;
+    burst(a.x*CELL+5,a.y*CELL+5,a.color,18,85);
+    if(!a.bot){sound("phase");toast(a.id===2?"P2 / ФАЗОВЫЙ ПРОХОД":"ФАЗОВЫЙ ПРОХОД")}
+  }
+
+  function spawnPickup(){
+    if(pickups.length>=7)return;
+    for(let n=0;n<200;n++){
+      const x=Math.floor(rnd(5,COLS-5)),y=Math.floor(rnd(5,ROWS-5));
+      if(value(x,y)!==0||pickups.some(p=>Math.abs(p.x-x)+Math.abs(p.y-y)<5))continue;
+      if(actors.some(a=>a.alive&&Math.abs(a.x-x)+Math.abs(a.y-y)<7))continue;
+      const types=["shield","nitro","phase"];
+      pickups.push({x,y,type:types[Math.floor(Math.random()*3)],life:19});
+      return;
+    }
+  }
+  function collect(a){
+    const i=pickups.findIndex(p=>p.x===a.x&&p.y===a.y);
+    if(i<0)return;
+    const p=pickups.splice(i,1)[0];
+    if(p.type==="shield")a.shield=Math.min(2,a.shield+1);
+    if(p.type==="nitro")a.energy=100;
+    if(p.type==="phase")a.phaseCD=0;
+    burst(a.x*CELL+5,a.y*CELL+5,a.color,14,65);
+    if(!a.bot){
+      if(mode==="campaign")score+=150;
+      sound("pickup");
+      const names={shield:"ЩИТ ПОЛУЧЕН",nitro:"НИТРО ЗАРЯЖЕНО",phase:"ФАЗА ГОТОВА"};
+      toast((mode==="duel"?`P${a.id} / `:"")+names[p.type]);
+    }
+  }
+
+  function burst(x,y,color,count=25,power=110){
+    if(reduced)count=Math.ceil(count/3);
+    for(let i=0;i<count;i++){
+      const angle=rnd(0,Math.PI*2),speed=rnd(power*.18,power);
+      const life=rnd(.25,.85);
+      particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life,max:life,color,size:rnd(1,3)});
+    }
+    if(particles.length>550)particles.splice(0,particles.length-550);
+  }
+
+  function kill(a){
+    if(!a.alive)return;
+    a.alive=false;a.boost=false;
+    burst(a.x*CELL+5,a.y*CELL+5,a.color,55,190);
+    shake=Math.max(shake,a.bot?3:8);flash=a.bot?.035:.12;sound("crash");
+    if(a.bot&&mode==="campaign"){
+      totalKills++;score+=400+stage*80;
+      toast(`СОПЕРНИК УНИЧТОЖЕН / +${400+stage*80}`);
+    }
+  }
+
+  // Локальный поиск свободного пространства: избегает коротких тупиков.
+  const visited=new Int32Array(COLS*ROWS);
+  const bfsQueue=new Int32Array(COLS*ROWS);
+  let visitTag=0;
+  function territory(x,y,limit=190){
+    if(value(x,y)!==0)return 0;
+    visitTag++;
+    let head=0,tail=1;
+    const start=index(x,y);bfsQueue[0]=start;visited[start]=visitTag;
+    while(head<tail&&head<limit){
+      const n=bfsQueue[head++],nx=n%COLS,ny=Math.floor(n/COLS);
+      for(let d=0;d<4;d++){
+        const xx=nx+DX[d],yy=ny+DY[d];
+        if(!inside(xx,yy))continue;
+        const ni=index(xx,yy);
+        if(visited[ni]===visitTag||board[ni]!==0)continue;
+        visited[ni]=visitTag;bfsQueue[tail++]=ni;
+      }
+    }
+    return Math.min(tail,limit);
+  }
+
+  function ray(a,d){
+    const limit=DIFFICULTY[difficulty].look;
+    let n=0;
+    for(let i=1;i<=limit;i++){
+      if(value(a.x+DX[d]*i,a.y+DY[d]*i)!==0)break;
+      n++;
+    }
+    return n;
+  }
+
+  function chooseAI(a){
+    const cfg=DIFFICULTY[difficulty];
+    let bestDir=a.dir,bestRating=-Infinity;
+    for(const d of [a.dir,(a.dir+1)%4,(a.dir+3)%4]){
+      const x=a.x+DX[d],y=a.y+DY[d],v=value(x,y);
+      if(v===-1)continue;
+      if(v>0&&a.phase<=0&&a.shield===0)continue;
+      const distance=ray(a,d);
+      const space=v===0?territory(x,y):0;
+      let rating=distance*1.3+space*.115+(d===a.dir?3.2:0)+rnd(0,cfg.noise);
+      for(const other of actors){
+        if(other===a||!other.alive)continue;
+        const proximity=Math.abs(other.x-x)+Math.abs(other.y-y);
+        if(proximity<5)rating-=(5-proximity)*5;
+        if(other.x+DX[other.dir]===x&&other.y+DY[other.dir]===y)rating-=60;
+      }
+      for(const p of pickups){
+        const dist=Math.abs(p.x-x)+Math.abs(p.y-y);
+        if(dist<13)rating+=(13-dist)*.25;
+      }
+      if(v>0)rating-=45;
+      if(rating>bestRating){bestRating=rating;bestDir=d}
+    }
+    if(bestRating===-Infinity&&a.phaseCD<=0)activatePhase(a);
+    a.dir=bestDir;
+    a.boost=ray(a,a.dir)>16&&a.energy>45&&a.boostRest<=0&&Math.random()<.055;
+    if(a.boost)a.boostRest=1.3;
+  }
+
+  function fixedUpdate(dt){
+    if(state==="countdown"){
+      countdown-=dt;
+      const n=Math.ceil(countdown);
+      if(n!==lastCount&&n>0){
+        lastCount=n;tone(n===1?600:380,.09,"sine",.25);
+        $("announcement").innerHTML=`<div><small>СИСТЕМА ГОТОВА</small><b>${n}</b></div>`;
+      }
+      if(countdown<=0){
+        state="playing";$("announcement").innerHTML="";
+        tone(960,.2,"triangle",.25);
+      }
+      return;
+    }
+    if(state!=="playing")return;
+    elapsed+=dt;totalTime+=dt;
+    if(mode==="campaign"&&actors[0].alive)score+=dt*12;
+    pickupTimer-=dt;
+    if(pickupTimer<=0){spawnPickup();pickupTimer=rnd(3.5,5.5)}
+    for(let i=pickups.length-1;i>=0;i--){
+      pickups[i].life-=dt;
+      if(pickups[i].life<=0)pickups.splice(i,1);
+    }
+
+    const moves=[];
+    for(const a of actors){
+      if(!a.alive)continue;
+      a.phase=Math.max(0,a.phase-dt);
+      a.phaseCD=Math.max(0,a.phaseCD-dt);
+      a.boostRest=Math.max(0,a.boostRest-dt);
+      if(!a.bot){
+        const held=a.id===1?(keys.has("ShiftLeft")||keys.has("ShiftRight")||touchBoost):keys.has("Enter");
+        if(a.id===1){
+          if(!held)boostLocked=false;
+          if(a.energy<=0)boostLocked=true;
+          a.boost=held&&!boostLocked&&a.energy>0;
+        }else a.boost=held&&a.energy>1;
+      }
+      a.energy=clamp(a.energy+dt*(a.boost?-32:17),0,100);
+      if(a.energy===0)a.boost=false;
+      const cfg=DIFFICULTY[difficulty];
+      let speed=a.bot?cfg.bot+(stage-1)*.28:cfg.speed;
+      if(a.boost)speed*=1.72;
+      a.progress+=dt*speed;
+
+      if(a.progress>=1){
+        a.progress-=1;
+        if(a.bot)chooseAI(a);
+        else if(a.queue.length){
+          const d=a.queue.shift();
+          if(d!==(a.dir+2)%4){a.dir=d;sound("turn")}
+        }
+        moves.push({a,x:a.x+DX[a.dir],y:a.y+DY[a.dir],fatal:false});
+      }
+    }
+
+    // Одновременные столкновения голов и обмен клетками.
+    for(let i=0;i<moves.length;i++){
+      const m=moves[i];
+      for(let j=i+1;j<moves.length;j++){
+        const n=moves[j];
+        if((m.x===n.x&&m.y===n.y)||
+          (m.x===n.a.x&&m.y===n.a.y&&n.x===m.a.x&&n.y===m.a.y)){
+          m.fatal=n.fatal=true;
+        }
+      }
+      for(const other of actors){
+        if(other===m.a||!other.alive||moves.some(q=>q.a===other))continue;
+        if(m.x===other.x&&m.y===other.y){
+          m.fatal=true;kill(other);
+        }
+      }
+    }
+
+    for(const m of moves){
+      const a=m.a;
+      if(!a.alive)continue;
+      const v=value(m.x,m.y);
+      if(m.fatal||v===-1){kill(a);continue}
+      if(v>0&&a.phase<=0){
+        if(a.shield>0){
+          a.shield--;
+          board[index(m.x,m.y)]=0;
+          tc.clearRect(m.x*CELL,m.y*CELL,CELL,CELL);
+          burst(m.x*CELL+5,m.y*CELL+5,"#ffffff",18,120);
+          if(!a.bot){sound("shield");toast(`P${a.id} / ЩИТ ПОГЛОТИЛ УДАР`)}
+        }else{kill(a);continue}
+      }
+      a.prevX=a.x;a.prevY=a.y;a.x=m.x;a.y=m.y;
+      if(a.phase<=0){
+        const connected=board[index(a.prevX,a.prevY)]===a.id;
+        board[index(a.x,a.y)]=a.id;
+        stamp(a,a.x,a.y,connected);
+        a.trailCount++;
+      }
+      collect(a);
+      if(a.boost&&Math.random()<.5){
+        burst(a.x*CELL+5,a.y*CELL+5,a.color,1,35);
+      }
+    }
+
+    const ended=mode==="campaign"
+      ?!actors[0].alive||actors.filter(a=>a.bot&&a.alive).length===0
+      :actors.filter(a=>a.alive).length<=1;
+    if(ended){
+      // Фиксируем исход сразу, оставляя время на анимацию взрыва.
+      roundWin=mode==="campaign"&&actors[0].alive;
+      roundWinner=mode==="duel"?(actors.find(a=>a.alive)?.id??0)-1:-1;
+      state="settling";settle=.9;clearInput();
+    }
+  }
+
+  function finishRound(){
+    score=Math.floor(score);
+    if(mode==="duel"){
+      if(roundWinner>=0)wins[roundWinner]++;
+      const finished=wins.some(w=>w>=3);
+      state=finished?"gameover":"round";
+      if(roundWinner>=0)sound("win");
+      showPanel(`
+        <div class="eyebrow">${finished?"МАТЧ ЗАВЕРШЁН":"ДУЭЛЬ / "+roundNo}</div>
+        <h2>${roundWinner<0?"Взаимное уничтожение":`Пилот ${roundWinner+1} побеждает`}</h2>
+        <p>Первый до трёх побед. Стены и следы не прощают ошибок.</p>
+        <div class="result-grid">
+          <div><b style="color:${COLORS[0]}">${wins[0]}</b><span>ПИЛОТ 1</span></div>
+          <div><b>${fmtTime(elapsed)}</b><span>ВРЕМЯ РАУНДА</span></div>
+          <div><b style="color:${COLORS[1]}">${wins[1]}</b><span>ПИЛОТ 2</span></div>
+        </div>
+        <div class="actions">
+          <button class="primary" data-action="${finished?"restart":"next"}">${finished?"РЕВАНШ":"СЛЕДУЮЩИЙ РАУНД"}</button>
+          <button data-action="menu">В МЕНЮ</button>
+        </div>`);
+      return;
+    }
+    if(roundWin){
+      const bonus=1000+stage*250+Math.max(0,Math.floor((90-elapsed)*12));
+      score+=bonus;sound("win");
+    }
+    saveBest();
+    const complete=roundWin&&stage===5;
+    state=roundWin&&!complete?"round":"gameover";
+    showPanel(`
+      <div class="eyebrow">${complete?"ПРОТОКОЛ ЗАВЕРШЁН":roundWin?"СЕКТОР ОЧИЩЕН":"СИГНАЛ ПОТЕРЯН"}</div>
+      <h2>${complete?"Ты стал легендой.":roundWin?"Чистая победа.":"Контур разорван."}</h2>
+      <p>${complete?"Все пять секторов под твоим контролем. Попробуй повторить на сложности «Легенда».":
+        roundWin?"В следующем секторе больше противников и сложнее геометрия арены.":
+        "Сбавляй нитро перед поворотом. Береги фазу для выхода из замкнутых контуров."}</p>
+      <div class="result-grid">
+        <div><b>${score.toLocaleString("ru-RU")}</b><span>ОЧКИ</span></div>
+        <div><b>${totalKills}</b><span>СОПЕРНИКОВ ВЫБЫЛО</span></div>
+        <div><b>${fmtTime(totalTime)}</b><span>ВРЕМЯ</span></div>
+      </div>
+      <div class="record">РЕКОРД / ${best.toLocaleString("ru-RU")} · ${DIFFICULTY[difficulty].name}</div>
+      <div class="actions">
+        <button class="primary" data-action="${state==="round"?"next":"restart"}">${state==="round"?"СЛЕДУЮЩИЙ СЕКТОР →":"ПОПРОБОВАТЬ СНОВА"}</button>
+        <button data-action="menu">В МЕНЮ</button>
+      </div>`);
+    updateHUD();
+  }
+
+  function pause(){
+    if(state==="paused"){
+      state="playing";hidePanel();clearInput();return;
+    }
+    if(state!=="playing")return;
+    state="paused";clearInput();
+    showPanel(`
+      <div class="eyebrow">СОЕДИНЕНИЕ ПРИОСТАНОВЛЕНО</div>
+      <h2>Пауза</h2>
+      <p>Следы никуда не исчезнут. Продумай следующий поворот.</p>
+      ${mode==="duel"?`<p>P1: WASD · Shift · Space<br>P2: стрелки · Enter · /</p>`:
+        `<p>WASD / стрелки — движение<br>Shift — нитро · Space — фаза<br>Фаза проходит сквозь следы, но не через стены.</p>`}
+      <div class="actions">
+        <button class="primary" data-action="resume">ПРОДОЛЖИТЬ</button>
+        <button data-action="restart">ЗАНОВО</button>
+        <button data-action="menu">В МЕНЮ</button>
+      </div>`);
+  }
+
+  function updateHUD(){
+    const a=actors[0];
+    $("roundLabel").textContent=mode==="duel"?"СЧЁТ":"СЕКТОР";
+    $("roundValue").textContent=mode==="duel"?`${wins[0]} : ${wins[1]}`:`0${stage} / 05`;
+    $("scoreValue").textContent=Math.floor(score).toLocaleString("ru-RU");
+    $("aliveValue").textContent=actors.filter(a=>a.alive).length||"—";
+    $("energyBar").style.width=(a?.energy??100)+"%";
+    $("energyText").textContent=Math.round(a?.energy??100)+"%";
+    const cd=a?.phaseCD??0;
+    $("phaseBar").style.width=((1-cd/7)*100)+"%";
+    $("phaseText").textContent=cd>0?cd.toFixed(1)+"с":"ГОТОВА";
+    $("shieldText").textContent="ЩИТ "+(a?.shield??0);
+  }
+
+  function drawBike(a,t){
+    if(!a.alive)return;
+    // Плавное следование между занятыми клетками, без изменения логики.
+    const p=clamp(a.progress,0,1);
+    const x=(a.prevX+(a.x-a.prevX)*p)*CELL+5;
+    const y=(a.prevY+(a.y-a.prevY)*p)*CELL+5;
+    ctx.save();ctx.translate(x,y);
+    if(a.shield){
+      ctx.strokeStyle=a.color;ctx.globalAlpha=.55+.15*Math.sin(t*5);
+      ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.stroke();
+      if(a.shield>1){ctx.beginPath();ctx.arc(0,0,14,0,Math.PI*2);ctx.stroke()}
+      ctx.globalAlpha=1;
+    }
+    if(a.phase>0){
+      ctx.globalAlpha=.45+.3*Math.sin(t*35);
+      ctx.strokeStyle="#fff";ctx.setLineDash([3,3]);ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(0,0,16,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+    }
+    ctx.rotate(a.dir*Math.PI/2);
+    if(a.boost){
+      ctx.fillStyle=a.color;ctx.shadowColor=a.color;ctx.shadowBlur=14;
+      ctx.beginPath();ctx.moveTo(-5,-3);ctx.lineTo(-18-Math.random()*9,0);ctx.lineTo(-5,3);ctx.fill();
+    }
+    ctx.shadowColor=a.color;ctx.shadowBlur=reduced?6:16;
+    ctx.fillStyle=a.color;
+    ctx.fillRect(-6,-5,10,2.3);ctx.fillRect(-6,2.7,10,2.3);
+    ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(1,-3.2);ctx.lineTo(-7,-2.7);
+    ctx.lineTo(-7,2.7);ctx.lineTo(1,3.2);ctx.closePath();ctx.fill();
+    ctx.shadowBlur=0;ctx.fillStyle="#efffff";ctx.fillRect(-1,-1.4,6,2.8);
+    ctx.fillStyle="#081925";ctx.fillRect(-5,-1.4,3,2.8);
+    ctx.restore();
+
+    if(mode==="duel"||elapsed<4){
+      ctx.save();ctx.font="bold 9px monospace";ctx.textAlign="center";
+      ctx.fillStyle=a.color;ctx.globalAlpha=mode==="duel"?.9:clamp(4-elapsed,0,1);
+      ctx.fillText(a.bot?"BOT "+(a.id-1):"P"+a.id,x,y-20);ctx.restore();
+    }
+    // Ресурсы второго игрока видны непосредственно над мотоциклом.
+    if(mode==="duel"&&a.id===2){
+      ctx.fillStyle="#162439";ctx.fillRect(x-15,y+15,30,3);
+      ctx.fillStyle=a.color;ctx.fillRect(x-15,y+15,30*a.energy/100,3);
+      ctx.fillStyle=a.phaseCD<=0?"#ffffff":"#503147";
+      ctx.fillRect(x-15,y+20,30*(1-a.phaseCD/7),2);
+    }
+  }
+
+  function render(t){
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.fillStyle="#060914";ctx.fillRect(0,0,W,H);
+
+    // Фон интерфейса.
+    const bg=ctx.createRadialGradient(W*.5,H*.45,20,W*.5,H*.45,Math.max(W,H)*.7);
+    bg.addColorStop(0,"#102035");bg.addColorStop(1,"#040711");
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle="#152239";ctx.lineWidth=1;
+    for(let i=-H;i<W+H;i+=75){
+      ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i+H,H);ctx.stroke();
+    }
+
+    ctx.save();
+    const sx=reduced?0:rnd(-shake,shake),sy=reduced?0:rnd(-shake,shake);
+    ctx.translate(ox+sx,oy+sy);ctx.scale(scale,scale);
+    ctx.shadowColor="#25d8ff";ctx.shadowBlur=22;
+    ctx.strokeStyle="#2b6d89";ctx.strokeRect(-3,-3,AW+6,AH+6);ctx.shadowBlur=0;
+    ctx.drawImage(floorCanvas,0,0);
+
+    // Двойной проход следов: мягкий ореол и чёткая сердцевина.
+    if(!reduced){
+      ctx.save();ctx.globalAlpha=.33;ctx.shadowColor="#59b7ff";
+      ctx.shadowBlur=9;ctx.drawImage(trailCanvas,0,0);ctx.restore();
+    }
+    ctx.drawImage(trailCanvas,0,0);
+
+    ctx.save();
+    ctx.beginPath();ctx.rect(0,0,AW,AH);ctx.clip();
+
+    for(const p of pickups){
+      if(p.life<3&&Math.floor(t*8)%2===0)continue;
+      const x=p.x*CELL+5,y=p.y*CELL+5;
+      const color=p.type==="shield"?"#ffc857":p.type==="nitro"?"#74ffac":"#ef83ff";
+      ctx.save();ctx.translate(x,y);
+      ctx.rotate(reduced?Math.PI/4:t*.6);
+      ctx.strokeStyle=color;ctx.globalAlpha=.65;ctx.lineWidth=1;
+      ctx.strokeRect(-8,-8,16,16);ctx.restore();
+      ctx.fillStyle="#091724";ctx.fillRect(x-5,y-5,10,10);
+      ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=12;
+      ctx.font="bold 10px monospace";ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText(p.type==="shield"?"S":p.type==="nitro"?"N":"Φ",x,y);
+      ctx.shadowBlur=0;ctx.textBaseline="alphabetic";ctx.textAlign="left";
+    }
+
+    for(const a of actors)drawBike(a,t);
+
+    ctx.save();ctx.globalCompositeOperation="lighter";
+    for(const p of particles){
+      ctx.globalAlpha=p.life/p.max;ctx.fillStyle=p.color;
+      ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size);
+    }
+    ctx.restore();
+
+    if(!reduced){
+      const scan=(t*28)%AH;
+      const g=ctx.createLinearGradient(0,scan-25,0,scan+25);
+      g.addColorStop(0,"#53f8ff00");g.addColorStop(.5,"#53f8ff07");g.addColorStop(1,"#53f8ff00");
+      ctx.fillStyle=g;ctx.fillRect(0,scan-25,AW,50);
+    }
+    ctx.restore();
+
+    // Угловые маркеры арены.
+    ctx.strokeStyle="#89faff";ctx.lineWidth=3;
+    for(const [x,y,dx,dy] of [[0,0,1,1],[AW,0,-1,1],[0,AH,1,-1],[AW,AH,-1,-1]]){
+      ctx.beginPath();ctx.moveTo(x,y+dy*19);ctx.lineTo(x,y);ctx.lineTo(x+dx*19,y);ctx.stroke();
+    }
+    ctx.restore();
+
+    if(flash>0&&!reduced){ctx.fillStyle=`rgba(195,235,255,${flash})`;ctx.fillRect(0,0,W,H)}
+    ctx.fillStyle="#6d8ba2";ctx.font="10px monospace";
+    ctx.textAlign="left";
+    ctx.fillText(mode==="duel"?"LOCAL VERSUS // FIRST TO 3":`SECTOR 0${stage} // ${SECTORS[stage-1]}`,ox,oy-13);
+    ctx.textAlign="right";ctx.fillText(state==="menu"?"SYSTEM ONLINE":`${fmtTime(elapsed)} // ${DIFFICULTY[difficulty].name}`,ox+AW*scale,oy-13);
+    ctx.textAlign="left";
+  }
+
+  function frame(now){
+    const dt=Math.min((now-last)/1000,.08);last=now;
+    if(state==="playing"||state==="countdown"){
+      accumulator+=dt;
+      while(accumulator>=1/60){fixedUpdate(1/60);accumulator-=1/60}
+    }else accumulator=0;
+
+    if(state==="settling"){
+      settle-=dt;
+      if(settle<=0)finishRound();
+    }
+
+    if(state!=="paused"){
+      for(let i=particles.length-1;i>=0;i--){
+        const p=particles[i];p.life-=dt;
+        if(p.life<=0){particles.splice(i,1);continue}
+        p.x+=p.vx*dt;p.y+=p.vy*dt;
+        p.vx*=Math.exp(-2*dt);p.vy*=Math.exp(-2*dt);
+      }
+      shake*=Math.exp(-8*dt);flash*=Math.exp(-10*dt);
+    }
+    toastTime-=dt;if(toastTime<=0)$("toast").style.opacity="0";
+
+    // Тихий синтезированный пульс вместо внешнего музыкального файла.
+    if(state==="playing"){
+      ambient-=dt;
+      if(ambient<=0){
+        ambient=.48;
+        const notes=[55,55,65.41,49,55,82.41,65.41,49];
+        tone(notes[Math.floor(elapsed/.48)%notes.length],.16,"triangle",.075);
+      }
+    }
+    uiClock+=dt;if(uiClock>.08){uiClock=0;updateHUD()}
+    render(now/1000);requestAnimationFrame(frame);
+  }
+
+  overlay.addEventListener("click",e=>{
+    const btn=e.target.closest("[data-action]");
+    if(!btn)return;
+    const action=btn.dataset.action;
+    unlockAudio();
+    if(action==="start")newGame(true);
+    if(action==="restart")newGame();
+    if(action==="menu")menu();
+    if(action==="resume")pause();
+    if(action==="next"){
+      if(mode==="duel")roundNo++;
+      else stage++;
+      buildRound();
+    }
+  });
+
+  const DIR_KEYS={KeyD:0,KeyS:1,KeyA:2,KeyW:3};
+  const ARROWS={ArrowRight:0,ArrowDown:1,ArrowLeft:2,ArrowUp:3};
+  addEventListener("keydown",e=>{
+    if(e.target.matches("select,input,textarea")||e.target.closest("#overlay")&&state==="menu")return;
+    if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space","Enter","Slash"].includes(e.code)&&state!=="menu")e.preventDefault();
+    keys.add(e.code);
+    if(e.repeat)return;
+    unlockAudio();
+    if(e.code==="KeyM"){toggleSound();return}
+    if(e.code==="KeyP"||e.code==="Escape"){pause();return}
+    if(e.code==="KeyR"&&state!=="menu"){newGame();return}
+    if(e.code in DIR_KEYS)queueDirection(actors[0],DIR_KEYS[e.code]);
+    if(e.code in ARROWS)queueDirection(actors[mode==="duel"?1:0],ARROWS[e.code]);
+    if(e.code==="Space")activatePhase(actors[0]);
+    if(e.code==="Slash"&&mode==="duel")activatePhase(actors[1]);
+  });
+  addEventListener("keyup",e=>keys.delete(e.code));
+  addEventListener("blur",()=>{
+    clearInput();if(state==="playing")pause();
+  });
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden){clearInput();if(state==="playing")pause()}
+    last=performance.now();
+  });
+
+  $("pauseButton").onclick=pause;
+  $("soundButton").onclick=toggleSound;
+  $("fullButton").onclick=async()=>{
+    try{
+      if(document.fullscreenElement)await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+    }catch(e){toast("ПОЛНЫЙ ЭКРАН НЕДОСТУПЕН")}
+  };
+
+  document.querySelectorAll("[data-dir]").forEach(btn=>{
+    btn.addEventListener("pointerdown",e=>{
+      e.preventDefault();unlockAudio();
+      queueDirection(actors[0],Number(btn.dataset.dir));
+    });
+  });
+
+  $("boostTouch").addEventListener("pointerdown",e=>{
+    e.preventDefault();unlockAudio();touchBoost=true;
+    $("boostTouch").setPointerCapture(e.pointerId);
+  });
+  for(const type of ["pointerup","pointercancel","lostpointercapture"]){
+    $("boostTouch").addEventListener(type,()=>touchBoost=false);
+  }
+  $("phaseTouch").addEventListener("pointerdown",e=>{
+    e.preventDefault();unlockAudio();activatePhase(actors[0]);
+  });
+
+  let swipe=null;
+  canvas.addEventListener("pointerdown",e=>{
+    swipe={x:e.clientX,y:e.clientY,id:e.pointerId};
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener("pointermove",e=>{
+    if(!swipe||swipe.id!==e.pointerId)return;
+    const dx=e.clientX-swipe.x,dy=e.clientY-swipe.y;
+    if(Math.max(Math.abs(dx),Math.abs(dy))<19)return;
+    queueDirection(actors[0],Math.abs(dx)>Math.abs(dy)?(dx>0?0:2):(dy>0?1:3));
+    swipe={x:e.clientX,y:e.clientY,id:e.pointerId};
+  });
+  canvas.addEventListener("pointerup",()=>swipe=null);
+  canvas.addEventListener("pointercancel",()=>swipe=null);
+  document.addEventListener("contextmenu",e=>{
+    if(e.target.closest("#touch")||e.target===canvas)e.preventDefault();
+  });
+
+  // Декоративная арена под стартовым меню.
+  board.fill(0);buildFloor();
+  tc.lineWidth=5;
+  const demoPaths=[
+    {c:COLORS[0],p:[[8,46],[25,46],[25,32],[41,32],[41,11],[59,11]]},
+    {c:COLORS[1],p:[[87,12],[73,12],[73,27],[59,27],[59,46],[42,46]]},
+    {c:COLORS[2],p:[[10,12],[30,12],[30,24],[15,24],[15,37]]}
+  ];
+  for(const path of demoPaths){
+    tc.strokeStyle=path.c;tc.globalAlpha=.65;tc.beginPath();
+    path.p.forEach(([x,y],i)=>i?tc.lineTo(x*CELL,y*CELL):tc.moveTo(x*CELL,y*CELL));
+    tc.stroke();
+  }
+  tc.globalAlpha=1;
+  menu();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
